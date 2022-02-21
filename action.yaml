@@ -1,0 +1,62 @@
+name: 'Build and Push Container Image'
+description: 'Builds and pushes a container image to GCR'
+inputs:
+  registry_url:
+    description: 'The registry url'
+    required: true
+  repository_name:
+    description: 'The registry repository name'
+    required: true
+  image_name:
+    description: 'The image name'
+    required: true
+  image_tag:
+    description: 'The image tag'
+    required: true
+  build_context:
+    description: 'The build context'
+    required: true
+  dockerfile_path:
+    description: 'The Dockerfile path'
+    required: true
+  extra_args:
+    description: 'Extra args'
+    required: false
+    default: ''
+  GCP_WORKLOAD_IDENTITY_PROVIDER:
+    description: 'The GCP workload identity provider for credential-less access'
+    required: true
+  GCP_SERVICE_ACCOUNT:
+    description: 'The GCP service account id for credential-less access'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: 'Authenticate to Google Cloud'
+      id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        token_format: 'access_token'
+        workload_identity_provider: ${{ inputs.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ inputs.GCP_SERVICE_ACCOUNT }}
+
+    - name: Login to GCR
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ inputs.registry_url }}
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
+
+    - name: Kaniko builder
+      uses: aevea/action-kaniko@master
+      with:
+        path: ${{ inputs.build_context }}
+        registry: ${{ inputs.registry_url }}
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
+        image: ${{ inputs.repository_name }}/${{ inputs.image_name }}
+        tag: ${{ inputs.image_tag }}
+        build_file: ${{ inputs.dockerfile_path }}
+        cache: true
+        extra_args: "${{ inputs.extra_args }}"
