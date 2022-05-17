@@ -5,7 +5,7 @@ inputs:
     description: 'The registry url'
     required: true
   additional_registry_url:
-    description: 'The registry url'
+    description: 'Additional registry url'
     required: false
     default: ''
   repository_name:
@@ -61,7 +61,7 @@ runs:
         password: ${{ steps.auth.outputs.access_token }}
 
     - name: Kaniko builder
-      uses: aevea/action-kaniko@master
+      uses: aevea/action-kaniko@v0.8.0
       with:
         path: ${{ inputs.build_context }}
         registry: ${{ inputs.registry_url }}
